@@ -2,10 +2,12 @@ import {
   BaseEntity,
   Column,
   Entity,
+  OneToMany,
   PrimaryGeneratedColumn,
   Unique,
 } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { Task } from 'src/tasks/task.entity';
 
 /**
  * Entity that holds the user params.
@@ -29,6 +31,9 @@ export class User extends BaseEntity {
    * signs in.
    */
   salt: string;
+
+  @OneToMany((type) => Task, (task) => task.user, { eager: true })
+  tasks: Task[];
 
   /**
    *  Check the password entered while signing in against

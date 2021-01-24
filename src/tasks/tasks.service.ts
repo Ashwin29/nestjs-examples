@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { User } from 'src/auth/user.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
 import { Task } from './task.entity';
@@ -25,18 +26,23 @@ export class TasksService {
    * tasks based on it's search query or status type.
    * @param filterDto This dto has the search and the status query.
    */
-  getTasks = async (filterDto: GetTasksFilterDto): Promise<Task[]> => {
+  getTasks = async (
+    filterDto: GetTasksFilterDto,
+    user: User,
+  ): Promise<Task[]> => {
     // Return all the retrieved tasks.
-    return this.taskRepository.getAllTasks(filterDto);
+    return this.taskRepository.getAllTasks(filterDto, user);
   };
 
   /**
    * Retrieves the task object based on it's id.
    * @param id ID of the task to be retrieved.
    */
-  getTaskById = async (id: number): Promise<Task> => {
+  getTaskById = async (id: number, user: User): Promise<Task> => {
     // Find task for it's given id.
-    const found = await this.taskRepository.findOne(id);
+    const found = await this.taskRepository.findOne({
+      where: { id, userId: user.id },
+    });
 
     if (!found) {
       // If not found return task doesn't exist exception.
@@ -51,18 +57,21 @@ export class TasksService {
    * Creates a new task for the give title and description.
    * @param createTaskDto Contains title and description.
    */
-  createTask = async (createTaskDto: CreateTaskDto): Promise<Task> => {
+  createTask = async (
+    createTaskDto: CreateTaskDto,
+    user: User,
+  ): Promise<Task> => {
     // Return created task object.
-    return this.taskRepository.createTask(createTaskDto);
+    return this.taskRepository.createTask(createTaskDto, user);
   };
 
   /**
    * Deletes a task based on it's id.
    * @param id ID of the task to be deleted.
    */
-  deleteTask = async (id: number): Promise<void> => {
+  deleteTask = async (id: number, user: User): Promise<void> => {
     // Delete the task for the given id.
-    const result = await this.taskRepository.delete(id);
+    const result = await this.taskRepository.delete({ id, userId: user.id });
 
     if (result.affected === 0) {
       // If rows are not affected then throw exception.
@@ -76,9 +85,13 @@ export class TasksService {
    * @param id ID of the task to be updated.
    * @param status Status value of the tasks to be updated.
    */
-  updateTaskStatus = async (id: number, status: TaskStatus): Promise<Task> => {
+  updateTaskStatus = async (
+    id: number,
+    status: TaskStatus,
+    user: User,
+  ): Promise<Task> => {
     // Retrieve the task based on it's id.
-    const task = await this.getTaskById(id);
+    const task = await this.getTaskById(id, user);
 
     // Change the status of the task.
     task.status = status;
