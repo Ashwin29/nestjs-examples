@@ -1,3 +1,4 @@
+import { User } from 'src/auth/user.entity';
 import { EntityRepository, Repository } from 'typeorm';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
@@ -13,12 +14,15 @@ export class TaskRepository extends Repository<Task> {
    * Performs database related operations for retrieving tasks.
    * @param filterDto This dto has the search and the status query.
    */
-  async getAllTasks(filterDto: GetTasksFilterDto): Promise<Task[]> {
+  async getAllTasks(filterDto: GetTasksFilterDto, user: User): Promise<Task[]> {
     // Destructure filter dto.
     const { search, status } = filterDto;
 
     // Create a query builder for the table task.
     const query = this.createQueryBuilder('task');
+
+    // Get all the tasks for the specified user id.
+    query.where('task.userId = :userId', { userId: user.id });
 
     if (status) {
       // Search for a record where status is matched.
@@ -42,10 +46,10 @@ export class TaskRepository extends Repository<Task> {
   }
 
   /**
-   * Performs database related operations for the 
+   * Performs database related operations for the
    * @param createTaskDto Contains title and description.
    */
-  async createTask(createTaskDto: CreateTaskDto): Promise<Task> {
+  async createTask(createTaskDto: CreateTaskDto, user: User): Promise<Task> {
     // Destructure the create task dto.
     const { description, title } = createTaskDto;
 
@@ -56,9 +60,13 @@ export class TaskRepository extends Repository<Task> {
     task.title = title;
     task.description = description;
     task.status = TaskStatus.OPEN;
+    task.user = user;
 
     // Save the task.
     await task.save();
+
+    // Delete user object before sending it as response.
+    delete task.user;
 
     // Return task.
     return task;
