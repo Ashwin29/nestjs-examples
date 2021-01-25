@@ -7,12 +7,15 @@ import { AuthService } from './auth.service';
 import { AuthConstants } from './constants/auth.constants';
 import { JwtStrategy } from './jwt/jwt.strategy';
 import { UserRepository } from './user.repository';
+import * as config from 'config';
+
+const jwtConfig = config.get('jwt');
 
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
-      secret: AuthConstants.JWT_SECRET_KEY,
+      secret: jwtConfig.secret,
       signOptions: {
         expiresIn: AuthConstants.ACCESS_TOKEN_DURATION,
       },
