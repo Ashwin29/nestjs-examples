@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/auth/user.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -12,6 +17,9 @@ import { TaskStatus } from './tasks.model';
  */
 @Injectable()
 export class TasksService {
+  // Initialize the logger.
+  private logger = new Logger('TaskService');
+
   constructor(
     /**
      * Perform dependency injection for including
@@ -45,6 +53,9 @@ export class TasksService {
     });
 
     if (!found) {
+      // Log the exception that occurred while finding the task based id.
+      this.logger.error(`Failed to retrieve the task for id ${id}.`);
+
       // If not found return task doesn't exist exception.
       throw new NotFoundException(`Task with id ${id} not found.`);
     }
@@ -74,6 +85,9 @@ export class TasksService {
     const result = await this.taskRepository.delete({ id, userId: user.id });
 
     if (result.affected === 0) {
+      // Log the exception that occurred while deleting the task based id.
+      this.logger.error(`Failed to delete the task for id ${id}`);
+
       // If rows are not affected then throw exception.
       throw new NotFoundException(`Task with id ${id} not found.`);
     }
@@ -96,10 +110,20 @@ export class TasksService {
     // Change the status of the task.
     task.status = status;
 
-    // Save the task.
-    await task.save();
+    try {
+      // Save the task.
+      await task.save();
 
-    // Return Task.
-    return task;
+      // Return Task.
+      return task;
+    } catch (error) {
+      // Log the exception that occurred while updating the status of the task based id.
+      this.logger.error(
+        `Failed to update status ${status} for the task id ${id}. ${error.stack}`,
+      );
+
+      // Throw internal server error 501.
+      throw new InternalServerErrorException();
+    }
   };
 }

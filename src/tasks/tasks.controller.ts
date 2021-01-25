@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Logger,
   Param,
   ParseIntPipe,
   Patch,
@@ -28,6 +29,9 @@ import { TasksService } from './tasks.service';
 @Controller('tasks')
 @UseGuards(AuthGuard())
 export class TasksController {
+  // Initialize the logger.
+  private logger = new Logger('TasksController');
+
   constructor(private taskService: TasksService) {}
 
   @Get()
@@ -35,6 +39,17 @@ export class TasksController {
     @Query(ValidationPipe) filterDto: GetTasksFilterDto,
     @GetUser() user: User,
   ): Promise<Task[]> {
+    // Log the username for the tasks retrieved.
+    this.logger.verbose(`Retrieving all tasks for user ${user.username}.`);
+
+    if (filterDto.search === null && filterDto.status === null) {
+      // Log the filter object for the tasks to be returned.
+      this.logger.verbose(
+        `Retrieving all tasks for filter ${JSON.stringify(filterDto)}.`,
+      );
+    }
+
+    // Return.
     return this.taskService.getTasks(filterDto, user);
   }
 
@@ -43,6 +58,10 @@ export class TasksController {
     @Param('id', ParseIntPipe) id: number,
     @GetUser() user: User,
   ): Promise<Task> {
+    // Log the task's id.
+    this.logger.verbose(`Retrieving a specific task for the id ${id}`);
+
+    // Return.
     return this.taskService.getTaskById(id, user);
   }
 
@@ -52,11 +71,26 @@ export class TasksController {
     @Body() createTaskDto: CreateTaskDto,
     @GetUser() user: User,
   ): Promise<Task> {
+    // Log the user and the values for which the task is created.
+    this.logger.verbose(
+      `Creating a task ${JSON.stringify(createTaskDto)} for the user ${
+        user.username
+      }`,
+    );
+
+    // Return.
     return this.taskService.createTask(createTaskDto, user);
   }
 
   @Delete('/:id')
-  deleteTask(@Param('id', ParseIntPipe) id: number, @GetUser() user: User): Promise<void> {
+  deleteTask(
+    @Param('id', ParseIntPipe) id: number,
+    @GetUser() user: User,
+  ): Promise<void> {
+    // Log the id of the task that's going to be deleted.
+    this.logger.verbose(`Deleting the task for id ${id}`);
+
+    // Return.
     return this.taskService.deleteTask(id, user);
   }
 
@@ -66,6 +100,12 @@ export class TasksController {
     @Body('status', TaskStatusValidationPipe) status: TaskStatus,
     @GetUser() user: User,
   ): Promise<Task> {
+    // Log the id for which the status value will be updated.
+    this.logger.verbose(
+      `Status ${status} will be updated for the task of id ${id}`,
+    );
+
+    // Return.
     return this.taskService.updateTaskStatus(id, status, user);
   }
 }
