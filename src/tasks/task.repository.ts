@@ -1,3 +1,4 @@
+import { InternalServerErrorException, Logger } from '@nestjs/common';
 import { User } from 'src/auth/user.entity';
 import { EntityRepository, Repository } from 'typeorm';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -10,6 +11,9 @@ import { TaskStatus } from './tasks.model';
  */
 @EntityRepository(Task)
 export class TaskRepository extends Repository<Task> {
+  // Initialize the logger.
+  private logger = new Logger('TaskRepository');
+
   /**
    * Performs database related operations for retrieving tasks.
    * @param filterDto This dto has the search and the status query.
@@ -38,11 +42,21 @@ export class TaskRepository extends Repository<Task> {
       );
     }
 
-    // Get all the tasks.
-    const tasks = await query.getMany();
+    try {
+      // Get all the tasks.
+      const tasks = await query.getMany();
 
-    // Return tasks.
-    return tasks;
+      // Return tasks.
+      return tasks;
+    } catch (error) {
+      // Log the exception that occurred while querying the tasks.
+      this.logger.error(
+        `Failed to query the tasks from the database. ${error.stack}`,
+      );
+
+      // Throw internal server error 501.
+      throw new InternalServerErrorException();
+    }
   }
 
   /**
@@ -62,13 +76,23 @@ export class TaskRepository extends Repository<Task> {
     task.status = TaskStatus.OPEN;
     task.user = user;
 
-    // Save the task.
-    await task.save();
+    try {
+      // Save the task.
+      await task.save();
 
-    // Delete user object before sending it as response.
-    delete task.user;
+      // Delete user object before sending it as response.
+      delete task.user;
 
-    // Return task.
-    return task;
+      // Return task.
+      return task;
+    } catch (error) {
+      // Log the exception that occurred while saving the task.
+      this.logger.error(
+        `Failed to save the task to the database. ${error.stack}`,
+      );
+
+      // Throw internal server error 501.
+      throw new InternalServerErrorException();
+    }
   }
 }
