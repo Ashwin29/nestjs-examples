@@ -19,7 +19,7 @@ export class UserRepository extends Repository<User> {
     const { password, username } = authCredentialsDto;
 
     // Create a new user.
-    const user = new User();
+    const user = this.create();
 
     // Assign value the username value.
     user.username = username;
